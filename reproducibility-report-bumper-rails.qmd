@@ -1,10 +1,10 @@
 ---
 title: "Reproducibility Report: Maglio & Polman (2014), Study 1"
 subtitle: "Bumper-rails version"
-author: "Your name here"
+author: "Lumi Kang"
 date: today
 format:
-  html:
+  pdf:
     toc: true
     toc-location: left
     embed-resources: true
@@ -121,11 +121,14 @@ Count the participants in each direction × station combination. Replace each
 
 ```{r}
 d |>
-  count("FIXME", "FIXME")
+  count(DIRECTION, STN_NAME) |>
+  pivot_wider(names_from = STN_NAME, values_from = n)
 ```
 
 Does this match the sample size in the paper (202 total, 101 per platform)?
 Is the design balanced, with the same *n* in every cell?
+
+It matches with the sample size in the paper, but the sample size is unbalanced due to the EAST-B-Y condition.
 
 ### The 2 × 4 ANOVA
 
@@ -137,9 +140,10 @@ Fill in the formula with the outcome (the distance rating) and the two
 predictors.
 
 ```{r}
-mod <- aov(FIXME ~ FIXME * FIXME, data = d)
+mod <- aov(DISTANCE ~ DIRECTION * STN_NAME, data = d)
 
 summary(mod)
+
 ```
 
 The numbers in parentheses in "F(3, 194)" are the degrees of freedom: 3 for the
@@ -177,13 +181,19 @@ ss_residual <- anova_table |>
   filter(term == "Residuals") |>
   pull(sumsq)
 
+ss_effect <- anova_table |>
+  filter(term != "Residuals") |>
+  pull(statistic)
+
 anova_table |>
   filter(term != "Residuals") |>
-  mutate(partial_eta_sq = "FIXME") |>
+  mutate(partial_eta_sq = (ss_effect / (ss_effect + ss_residual))) |>
   select(term, df, statistic, p.value, partial_eta_sq)
 ```
 
 Do your ηp² values round to the paper's .27 (station) and .20 (interaction)?
+
+no.....:(
 
 ### Station-by-station comparisons
 
@@ -199,20 +209,40 @@ SS_direction / SS_total.
 
 # 1. Keep only the St. George ratings
 st_george <- d |>
-  filter("FIXME")
+  filter(STN_NAME == "STG")
 
 # 2. Which group rated St. George as farther away, eastbound or westbound?
 #    No statistics yet, just the mean rating in each direction.
-st_george |>
-  group_by("FIXME") |>
-  summarize(mean_distance = "FIXME", n = n())
+st_george_summary <- st_george |>
+  group_by(DIRECTION) |>
+  summarize(mean_distance = mean(DISTANCE), n = n())
+
+print(st_george_summary)
+
+# East group is farther away than west group.
 
 # 3. One-way ANOVA: distance predicted by direction
-st_george_mod <- aov("FIXME", data = st_george)
-tidy(st_george_mod)
+st_george_mod <- aov(DISTANCE ~ DIRECTION, data = st_george)
+
+summary(st_george_mod)
+
+aov_table2 <- tidy(st_george_mod)
 
 # 4. Partial eta squared (reuse your code from above)
-"FIXME"
+ss_residual2 <- aov_table2 |>
+  filter(term == "Residuals") |>
+  pull(sumsq)
+
+ss_effect2 <- aov_table2 |>
+  filter(term != "Residuals") |>
+  pull(statistic)
+
+aov_table2 |>
+  filter(term != "Residuals") |>
+  mutate(partial_eta_sq = (ss_effect2 / (ss_effect2 + ss_residual2))) |>
+  select(term, df, statistic, p.value, partial_eta_sq)
+  
+
 ```
 
 #### Spadina, Bloor-Yonge, and Sherbourne
@@ -224,15 +254,99 @@ chunk three times works. If you want to try something tidier, the
 ```{r}
 #| label: spadina
 
+spadina <- d |>
+  filter(STN_NAME == "SPAD")
+
+spadina_summary <- spadina |>
+  group_by(DIRECTION) |>
+  summarize(mean_distance = mean(DISTANCE), n = n())
+
+print(spadina_summary)
+
+spadina_mod <- aov(DISTANCE ~ DIRECTION, data = spadina)
+
+summary(spadina_mod)
+
+aov_table3 <- tidy(spadina_mod)
+
+ss_residual3 <- aov_table3 |>
+  filter(term == "Residuals") |>
+  pull(sumsq)
+
+ss_effect3 <- aov_table3 |>
+  filter(term != "Residuals") |>
+  pull(statistic)
+
+aov_table3 |>
+  filter(term != "Residuals") |>
+  mutate(partial_eta_sq = (ss_effect3 / (ss_effect3 + ss_residual3))) |>
+  select(term, df, statistic, p.value, partial_eta_sq)
+
 ```
 
 ```{r}
 #| label: bloor-yonge
 
+bloor_yonge <- d |>
+  filter(STN_NAME == "B-Y")
+
+bloor_yonge_summary <- bloor_yonge |>
+  group_by(DIRECTION) |>
+  summarize(mean_distance = mean(DISTANCE), n = n())
+
+print(bloor_yonge_summary)
+
+bloor_yonge_mod <- aov(DISTANCE ~ DIRECTION, data = bloor_yonge)
+
+summary(bloor_yonge_mod)
+
+aov_table4 <- tidy(bloor_yonge_mod)
+
+ss_residual4 <- aov_table4 |>
+  filter(term == "Residuals") |>
+  pull(sumsq)
+
+ss_effect4 <- aov_table4 |>
+  filter(term != "Residuals") |>
+  pull(statistic)
+
+aov_table4 |>
+  filter(term != "Residuals") |>
+  mutate(partial_eta_sq = (ss_effect4 / (ss_effect4 + ss_residual4))) |>
+  select(term, df, statistic, p.value, partial_eta_sq)
+
 ```
 
 ```{r}
 #| label: sherbourne
+
+sherbourne <- d |>
+  filter(STN_NAME == "SHER")
+
+sherbourne_summary <- sherbourne |>
+  group_by(DIRECTION) |>
+  summarize(mean_distance = mean(DISTANCE), n = n())
+
+print(sherbourne_summary)
+
+sherbourne_mod <- aov(DISTANCE ~ DIRECTION, data = sherbourne)
+
+summary(sherbourne_mod)
+
+aov_table5 <- tidy(sherbourne_mod)
+
+ss_residual5 <- aov_table5 |>
+  filter(term == "Residuals") |>
+  pull(sumsq)
+
+ss_effect5 <- aov_table5 |>
+  filter(term != "Residuals") |>
+  pull(statistic)
+
+aov_table5 |>
+  filter(term != "Residuals") |>
+  mutate(partial_eta_sq = (ss_effect5 / (ss_effect5 + ss_residual5))) |>
+  select(term, df, statistic, p.value, partial_eta_sq)
 
 ```
 
@@ -240,26 +354,26 @@ Fill in this table as you go:
 
 | Station | Paper *p* | Your *p* | Paper ηp² | Your ηp² |
 |---|---|---|---|---|
-| St. George | < .001 | | .28 | |
-| Spadina | .001 | | .20 | |
-| Bloor-Yonge | .053 | | .08 | |
-| Sherbourne | < .001 | | .24 | |
+| St. George | < .001 | <.001 | .28 | 0.30|
+| Spadina | .001 | 0.001 | .20 | 0.18 |
+| Bloor-Yonge | .053 | 0.053 | .08 | .07 |
+| Sherbourne | < .001 | <.001 | .24 | 0.19 |
 
 ## Step 5: Reflection
 
 Were you able to reproduce the results you attempted to reproduce? If not, which
 parts could you not reproduce?
 
-> ANSWER HERE
+> I could reproduce the p-value, but not the pes. 
 
 How difficult was it to reproduce the results?
 
-> ANSWER HERE
+> It was easy at first, but I forgot to adjust some of the objects after copy-and-paste, which gave me wrong pes values. 
 
 What made it hard, and what made it easy? Think about the data files, the
 variable names, and how much the paper told you about the analysis.
 
-> ANSWER HERE
+> Sometimes the variable names were a bit confusing.
 
 ## Bonus questions
 
@@ -272,7 +386,15 @@ counts. What does that suggest about how the authors' software (SPSS) and R's
 first.
 
 ```{r}
+mod <- aov(DISTANCE ~ DIRECTION * STN_NAME, data = d)
 
+mod2 <- aov(DISTANCE ~ STN_NAME * DIRECTION, data = d)
+
+summary(mod)
+summary(mod2)
+
+# I think the F-value changed to 23.44.
+# The cells are not all the same size.
 ```
 
 **2. Orientation or direction?** The paper describes the factor as
@@ -282,6 +404,28 @@ their ANOVA? Make an `orientation` column with `if_else()` and refit the model
 with it to check.
 
 ```{r}
+d2 <- d |> 
+  mutate(
+    ORIENTATION = if_else(
+      (DIRECTION == "WEST" & STN_NAME %in% c("SPAD", "STG")) |
+      (DIRECTION == "EAST" & STN_NAME %in% c("B-Y", "SHER")),
+      "TOWARD", "AWAY")
+  )
+
+d2 <- d2 |>
+  mutate(
+    DIRECTION = factor(DIRECTION),
+    STN_NAME = factor(STN_NAME, levels = c("SPAD", "STG", "B-Y", "SHER")),
+    ORIENTATION = factor(ORIENTATION, levels = c("TOWARD", "AWAY"))
+  )
+
+mod3 <- aov(DISTANCE ~ ORIENTATION * STN_NAME, data = d2)
+
+summary(mod3)
+
+#- Main effect of orientation: F(1, 194) = 43.7
+#- Main effect of station: F(3, 194) = 24.35
+#- Interaction between orientation and station: F(3, 194) = 0.93
 
 ```
 
@@ -291,7 +435,14 @@ split by direction, with error bars of ±1 standard error, as in the paper.
 for you.
 
 ```{r}
+d3 <- d |>
+  group_by(STN_NAME, DIRECTION)
 
+ggplot(d3, aes(x = STN_NAME, y = DISTANCE, color = DIRECTION, group = DIRECTION)) +
+  stat_summary(fun = mean, geom = "point", size = 3) +
+  stat_summary(fun = mean, geom = "line", size = 1) +
+  stat_summary(fun.data = mean_se, fun.args = list(mult = 1), geom = "errorbar", width = 0.1) +
+  labs(x = "Station", y = "Avreage Distance")
 ```
 
 ## Going further
